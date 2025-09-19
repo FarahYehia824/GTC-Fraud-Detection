@@ -1,6 +1,7 @@
 
 🛡️ Fraud Detection System
 
+**BY FOUAD HERE's the datasets link: https://www.mediafire.com/file/2yy5yw7zo7l9mly/Datasets.zip/file **
 
 📌 Description:
 

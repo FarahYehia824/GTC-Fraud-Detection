@@ -11,7 +11,7 @@
 
 ---
 ## 🎥 Project Demo
-**Demo Video:** [Watch the complete project demonstration](https://drive.google.com/drive/folders/1hZNRhd6ot-Iup7Jc4bT3euitkz3jpzR7) (4 minutes)
+**Demo Video:** [Watch the complete project demonstration](https://drive.google.com/file/d/1b5iZRU0zhRLcPxt_ifUXNzQ1urUydBF_/view?usp=sharing) (4 minutes)
 
 ## 📋 Project Overview
 

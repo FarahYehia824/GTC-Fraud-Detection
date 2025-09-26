@@ -1,244 +1,315 @@
-# 💳 Credit Card Fraud Detection Project
+# 💳 Credit Card Fraud Detection System
+
+## 🔗 Quick Access Links
+
+| Resource | Link | Description |
+|----------|------|-------------|
+| 📊 **Live Web Application** | [🚀 Try the App](https://gtc-fraud-detection-9mtefvddmsmjyzeictpraw.streamlit.app/) | Interactive fraud detection system |
+| 📋 **Project Presentation** | [📑 View Slides](https://credit-card-fraud-detect-9vsoerj.gamma.site/) | Detailed project overview & results |
+| 💻 **Source Code** | [GitHub Repository](https://github.com/FarahYehia824/GTC-Fraud-Detection) | Complete project codebase |
+| 📊 **Dataset** | [Synthetic Credit Card Transactions](https://www.kaggle.com/datasets/kartik2112/fraud-detection/data) | Original dataset source |
+
+---
+## 🎥 Project Demo
+**Demo Video:** [Watch the complete project demonstration](YOUR_DRIVE_LINK_HERE) (5 minutes)
 
 ## 📋 Project Overview
 
-This project implements a comprehensive machine learning pipeline to detect fraudulent credit card transactions. The system analyzes transaction patterns, customer behavior, and geographic data to identify potentially fraudulent activities with high accuracy.
+This project implements a comprehensive machine learning pipeline to detect fraudulent credit card transactions using advanced data science techniques. The system analyzes transaction patterns, customer behavior, geographic data, and temporal features to identify potentially fraudulent activities with high accuracy.
 
-## 🎯 Business Problem
+### 🎯 Business Problem
 
 Credit card fraud causes billions of dollars in losses annually and undermines customer trust in financial institutions. Traditional rule-based systems often have high false positive rates, leading to legitimate transactions being declined. This project aims to build an intelligent fraud detection system that:
 
-- Accurately identifies fraudulent transactions
-- Minimizes false positives (legitimate transactions flagged as fraud)
-- Processes transactions in real-time
-- Provides interpretable results for fraud analysts
+- Accurately identifies fraudulent transactions with high precision
+- Minimizes false positives (legitimate transactions flagged as fraud)  
+- Provides real-time fraud scoring capabilities
+- Delivers interpretable results for fraud analysts
+- Maintains customer satisfaction while preventing financial losses
+
+## 🏆 Key Results
+
+### Model Performance Summary
+| Model | Accuracy | Precision | Recall | F1-Score | ROC-AUC |
+|-------|----------|-----------|--------|----------|---------|
+| **XGBoost** | **99.31%** | **41.84%** | **96.24%** | **58.32%** | **99.88%** |
+| Random Forest | 99.82% | 97.52% | 65.20% | 78.15% | 98.52% |
+| Logistic Regression | 87.32% | 3.22% | 83.11% | 6.20% | 93.54% |
+
+**Selected Model: XGBoost** - Optimal balance of high recall (catches 96% of fraud) with reasonable precision and excellent ROC-AUC score.
 
 ## 📊 Dataset Description
 
 **Source:** Synthetic credit card transactions dataset  
-**Size:** 1852394 transactions  
+**Size:** 1,852,394 transactions  
 **Time Period:** Transaction data spanning multiple months  
 **Target Variable:** `is_fraud` (binary: 0 = legitimate, 1 = fraudulent)
 
-### Key Features:
-- **Transaction Details:** Amount, date/time, transaction number
-- **Card Information:** Credit card number (anonymized)
-- **Customer Demographics:** Name, age, gender, location
-- **Merchant Information:** Merchant name, category, location
-- **Geographic Data:** Customer and merchant coordinates
-
-### Class Distribution:
-- **Legitimate Transactions:** ~99.35%
+### Dataset Characteristics:
+- **Legitimate Transactions:** ~99.35% (highly imbalanced dataset)
 - **Fraudulent Transactions:** ~0.65%
-- **Challenge:** Highly imbalanced dataset requiring specialized techniques
+- **Features:** 23+ original features plus 15+ engineered features
+- **Geographic Coverage:** Multiple US states and cities
+- **Transaction Categories:** 26+ merchant categories
+
+### Key Features:
+- **Transaction Details:** Amount, timestamp, transaction number
+- **Customer Demographics:** Age, gender, location, job
+- **Merchant Information:** Name, category, geographic location
+- **Geographic Data:** Customer and merchant coordinates with distance calculations
+- **Temporal Patterns:** Hour, day of week, business hours indicators
 
 ## 🔧 Technical Implementation
 
 ### 1. Data Preprocessing Pipeline
 
-#### **Missing Values Handling**
+#### Missing Values Handling
+- **Geographic data:** Filled with median values for coordinates
+- **Categorical data:** Filled with mode (most frequent values)
+- **Target variable:** Missing fraud labels assumed as legitimate transactions
+- **Temporal data:** Forward/backward fill for datetime columns
+
+#### Outlier Treatment
+- **Geographic outliers:** Capped using IQR method (7,063 merchant lat, 59,972 merchant long)
+- **Amount outliers:** Removed only clearly invalid values (negative/zero amounts)
+- **Temporal outliers:** Minimal adjustment 
+- **Fraud cases preserved:** 9,651 fraud cases kept as legitimate targets
+
+#### Data Type Corrections
+- **DateTime conversion:** Transaction timestamps and date of birth
+- **Numeric conversion:** Amount, coordinates, population data
+- **Categorical encoding:** Label encoding for high-cardinality variables
+
+### 2. Advanced Feature Engineering
+
+#### Time-Based Features (7 features)
 ```python
-# Geographic data: filled with median values
-# Categorical data: filled with mode (most frequent)
-# Target variable: missing values assumed as non-fraud
+# Risk-based temporal features
+'hour', 'day_of_week', 'month', 'is_weekend'
+'is_night_transaction'     # 10PM-6AM (3x higher fraud rate)
+'is_business_hours'        # 9AM-5PM business hours
+'is_high_risk_hours'       # 12AM-3AM (highest risk period)
 ```
 
-#### **Outlier Treatment**
+#### Geographic Features (3 features)
 ```python
-# Geographic outliers: Capped using IQR method
-# Amount outliers: Removed only invalid values (negative/zero)
-# Fraud cases: Preserved (they're the target, not outliers!)
+# Location-based risk indicators
+'distance_km'              # Haversine distance calculation
+'is_far_transaction'       # >100km from home (suspicious)
+'is_very_far_transaction'  # >500km (very suspicious)
 ```
 
-#### **Data Type Corrections**
+#### Customer Demographics (2 features)
 ```python
-# DateTime: trans_date_trans_time, dob
-# Numeric: amt, lat, long, city_pop
-# Categorical: merchant, category, state, etc.
+'customer_age'             # Calculated from date of birth
+'age_risk_category'        # Age groups with different risk profiles
 ```
 
-### 2. Feature Engineering
+#### Transaction Amount Features (5 features)
+```python
+'log_amount'               # Log transformation for skewed amounts
+'is_high_amount'           # >95th percentile transactions
+'is_low_amount'            # <5th percentile transactions  
+'is_round_amount'          # Round dollar amounts (e.g., $100.00)
+'amt_per_pop'              # Amount relative to city population
+```
 
-#### **Time-Based Features**
-- `hour`: Transaction hour (0-23)
-- `day_of_week`: Day of week (0=Monday, 6=Sunday)
-- `is_weekend`: Weekend transactions (higher risk)
-- `is_night_transaction`: Transactions 10PM-6AM (higher risk)
-- `is_business_hours`: Business hours transactions (9AM-5PM)
-- `is_high_risk_hours`: Transactions 12AM-3AM (highest risk)
+#### Behavioral Pattern Features (4 features)
+```python
+'transactions_per_hour'    # Transaction velocity per card
+'is_high_velocity'         # Multiple transactions in short timeframe
+'category_risk_score'      # Fraud rate by merchant category
+'is_high_risk_category'    # High-risk merchant categories
+```
 
-#### **Customer Demographics**
-- `customer_age`: Calculated from date of birth
-- `age_risk_category`: Age groups with different risk levels
+#### Encoded Categorical Features (7 features)
+```python
+# Label-encoded categorical variables
+'merchant_encoded', 'category_encoded', 'state_encoded'
+'job_encoded', 'gender_encoded', 'city_encoded', 'street_encoded'
+```
 
-#### **Geographic Features**
-- `distance_km`: Distance between customer and merchant (Haversine formula)
-- `is_far_transaction`: Transactions >100km from customer location
-- `is_very_far_transaction`: Transactions >500km (very suspicious)
+**Total Engineered Features:** 28 features created from 23 original features
 
-#### **Transaction Amount Features**
-- `log_amount`: Log-transformed amount (handles skewness)
-- `is_high_amount`: High-value transactions (>95th percentile)
-- `is_low_amount`: Low-value transactions (<5th percentile)
-- `is_round_amount`: Round amounts (e.g., $100.00)
-- `amt_per_pop`: Amount relative to city population
+### 3. Model Training & Selection
 
-#### **Velocity Features**
-- `transactions_per_hour`: Number of transactions per card per hour
-- `is_high_velocity`: Multiple transactions in short timeframe
+#### Class Imbalance Handling
+- **XGBoost:** `scale_pos_weight` parameter for automatic balancing
+- **Random Forest:** `class_weight='balanced'` parameter
+- **Logistic Regression:** Manual class weights optimization
 
-#### **Risk Scoring**
-- `category_risk_score`: Fraud rate by merchant category
-- `is_high_risk_category`: Categories with high fraud rates
+#### Model Optimization
+- **Hyperparameter tuning** for Logistic Regression (12 configurations tested)
+- **Feature correlation analysis** with automatic removal of correlated features (>0.9)
+- **Cross-validation** for model stability assessment
 
-#### **Encoded Categorical Features**
-- `merchant_encoded`: Label-encoded merchant names
-- `category_encoded`: Label-encoded transaction categories
-- `state_encoded`: Label-encoded states
-- `job_encoded`: Label-encoded customer jobs
-- `gender_encoded`: Binary encoding (0=Female, 1=Male)
-
-### 3. Feature Selection
-
-**Correlation-Based Selection:**
-- Removed features with correlation > 0.9
-- Avoided multicollinearity issues
-- Retained ~30 most predictive features
-
-### 4. Data Splitting & Scaling
-
-**Train/Test Split:**
-- 80% training, 20% testing
-- Stratified split to maintain fraud ratio
-- Random state = 42 for reproducibility
-
-**Scaling:**
-- **RobustScaler** (better for outliers in fraud data)
-- Fitted on training data only
-- Applied to both train and test sets
-
-## 🎯 Model Performance Metrics
-
-For imbalanced fraud detection, we focus on:
-
-- **Precision:** How many predicted frauds are actually fraud (minimize false alarms)
-- **Recall:** How many actual frauds we catch (minimize missed fraud)
-- **F1-Score:** Balanced measure of precision and recall
+#### Performance Evaluation Metrics
+- **Precision:** Minimize false alarms to customers
+- **Recall:** Maximize fraud detection rate  
+- **F1-Score:** Balanced precision-recall measure
 - **ROC-AUC:** Overall model discrimination ability
-- **Confusion Matrix:** Detailed breakdown of predictions
+- **Business metrics:** False positive rate, fraud detection rate
+
+### 4. Model Deployment
+
+#### Streamlit Web Application Features
+- **Interactive fraud prediction** with real-time scoring
+- **Risk factor analysis** with detailed explanations
+- **Feature importance visualization** using Plotly
+- **User-friendly interface** for transaction input
+- **Professional dashboard** with metrics and charts
+
+#### Technical Specifications
+- **Model size optimization:** XGBoost model compressed to 0.4MB
+- **Real-time prediction:** Sub-second response time
+- **Scalable architecture:** Cloud-ready deployment
+- **Error handling:** Robust input validation and error recovery
+
+## 📈 Business Impact & Insights
+
+### Key Fraud Indicators Discovered
+1. **Time-based patterns:**
+   - Night transactions (10PM-6AM) have 3x higher fraud rate
+   - Weekend transactions show elevated risk
+   - Early morning hours (12AM-3AM) are highest risk
+
+2. **Geographic patterns:**
+   - Transactions >100km from home are 5x more suspicious
+   - Certain merchant categories have significantly higher fraud rates
+   - Cross-state transactions require additional scrutiny
+
+3. **Amount patterns:**
+   - Round amounts ($100, $500) are more likely fraudulent
+   - Very high amounts (>95th percentile) require verification
+   - Amount relative to city population is a strong indicator
+
+4. **Velocity patterns:**
+   - Multiple transactions per hour from same card are highly suspicious
+   - High-velocity patterns are strongest fraud predictors
+
+### Business Recommendations
+1. **Real-time alerts** for night and high-velocity transactions
+2. **Geographic verification** for distant transactions
+3. **Dynamic transaction limits** based on risk scores
+4. **Enhanced authentication** for high-risk scenarios
 
 ## 📁 Project Structure
 
 ```
-fraud-detection/
+GTC-Fraud-Detection/
 │
-├── data/
-│   ├── fraudTrain.csv              # Training dataset
-│   ├── fraudTest.csv               # Test dataset
-│   └── preprocessed_fraud_data.csv # Cleaned dataset
+├── 📊 Data Files
+│   ├── fraudTrain.csv                    # Original training dataset
+│   ├── fraudTest.csv                     # Original test dataset  
+│   
 │
-├── notebooks/
-│   ├── 01_EDA.ipynb                # Exploratory Data Analysis
-│   ├── 02_preprocessing.ipynb      # Data preprocessing
-│   ├── 03_feature_engineering.ipynb # Feature creation
-│   ├── 04_modeling.ipynb           # Model training & evaluation
-│   └── 05_results_analysis.ipynb   # Results interpretation
+├── 📓 Notebooks
+│   ├── Credit_Card_Fraud.ipynb           # Main analysis notebook
+│   └── Copy_of_Credit_Card_Fraud.py      # Python script version
 │
-├── src/
-│   ├── preprocessing.py            # Data preprocessing functions
-│   ├── feature_engineering.py     # Feature creation functions
-│   ├── models.py                   # Model definitions
-│   └── evaluation.py              # Evaluation metrics
+├── 🤖 Model Files
+│   ├── fraud_detection_model.pkl         # Trained XGBoost model (0.4MB)
+│   ├── robust_scaler.pkl                 # Feature scaler
+│   ├── label_encoders.pkl                # Categorical encoders
+│   ├── feature_columns.pkl               # Feature names list
+│   └── model_metadata.pkl                # Model information
 │
-├── models/
-│   ├── fraud_detection_model.pkl   # Trained model
-│   ├── robust_scaler.pkl          # Feature scaler
-│   └── label_encoders.pkl         # Categorical encoders
+├── 🌐 Deployment Files  
+│   ├── app.py                           # Streamlit web application
+│   ├── requirements.txt                 # Python dependencies
+│   └── README.md                        # Project documentation
 │
-├── results/
-│   ├── feature_importance.png     # Feature importance plot
-│   ├── roc_curves.png             # ROC curves comparison
-│   └── confusion_matrix.png       # Confusion matrix
-│
-└── README.md                       # This file
+└── 📋 Documentation
+    └── REPORT_Data Analysis & Cleaning Report.pdf  # Detailed analysis report
 ```
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 ```bash
-pip install pandas numpy scikit-learn matplotlib seaborn
-pip install xgboost  # optional, for XGBoost models
+pip install streamlit pandas numpy scikit-learn plotly xgboost joblib
 ```
 
-### Running the Project
+### Local Development
+```bash
+# Clone the repository
+git clone https://github.com/FarahYehia824/GTC-Fraud-Detection.git
+cd GTC-Fraud-Detection
 
-1. **Data Preprocessing:**
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the Streamlit app
+streamlit run app.py
+```
+
+### Cloud Deployment
+The application is deployed on Streamlit Cloud with automatic updates from the GitHub repository.
+
+## 🔍 Usage Examples
+
+### Web Application
+1. Access the live web application using the link above
+2. Input transaction details (amount, time, location, etc.)
+3. Get instant fraud risk assessment with explanations
+4. View detailed risk factor analysis and recommendations
+
+### API Integration (Future Enhancement)
 ```python
-# Load and clean the data
-df = load_data()
-df_clean = preprocess_data(df)
+import joblib
+import pandas as pd
+
+# Load the trained model
+model = joblib.load('fraud_detection_model.pkl')
+scaler = joblib.load('robust_scaler.pkl')
+
+# Make prediction
+features = prepare_transaction_features(transaction_data)
+scaled_features = scaler.transform([features])
+fraud_probability = model.predict_proba(scaled_features)[0][1]
 ```
 
-2. **Feature Engineering:**
-```python
-# Create predictive features
-df_features = create_features(df_clean)
-```
+## 📊 Performance Metrics Detail
 
-3. **Model Training:**
-```python
-# Train and evaluate models
-X_train, X_test, y_train, y_test = prepare_data(df_features)
-model = train_model(X_train, y_train)
-evaluate_model(model, X_test, y_test)
-```
+### Confusion Matrix Analysis
+- **True Negatives:** 83,147 (legitimate correctly identified)
+- **False Positives:** 197 (legitimate flagged as fraud) - 0.24% false alarm rate
+- **False Negatives:** 32 (fraud missed) - 3.76% of actual fraud
+- **True Positives:** 817 (fraud correctly identified) - 96.24% detection rate
 
-## 📈 Key Results & Insights
+### Business KPIs
+- **Customer Impact:** Only 0.24% of legitimate customers affected
+- **Fraud Prevention:** 96.24% of fraudulent transactions detected
+- **Cost Savings:** Significant reduction in fraud losses vs false positive costs
+- **Processing Speed:** Real-time prediction capability
 
-### Most Important Features for Fraud Detection:
-1. **Transaction Amount Features:** `log_amount`, `is_high_amount`
-2. **Geographic Features:** `distance_km`, `is_far_transaction`
-3. **Time Features:** `is_night_transaction`, `hour`
-4. **Velocity Features:** `transactions_per_hour`, `is_high_velocity`
-5. **Risk Scores:** `category_risk_score`, `merchant_risk_score`
+## 🔮 Future Enhancements
 
-### Business Insights:
-- **Night transactions** (10PM-6AM) have 3x higher fraud rate
-- **High-velocity** transactions (multiple per hour) are highly suspicious
-- **Geographic distance** is a strong fraud indicator
-- **Certain merchant categories** have significantly higher fraud rates
-- **Round amounts** and **high amounts** are more likely to be fraudulent
+### Technical Improvements
+- **Deep Learning Models:** Neural networks for complex pattern detection
+- **Ensemble Methods:** Combining multiple models for improved accuracy
+- **Real-time Streaming:** Apache Kafka for live transaction processing
+- **AutoML Pipeline:** Automated model retraining and deployment
 
-## 🔮 Future Improvements
+### Feature Enhancements
+- **Network Analysis:** Merchant connection patterns
+- **Time Series Features:** Historical spending behavior analysis  
+- **External Data:** Weather, events, economic indicators
+- **Behavioral Biometrics:** Typing patterns, device fingerprinting
 
-1. **Advanced Models:**
-   - Deep learning approaches (Neural Networks)
-   - Ensemble methods (Gradient Boosting)
-   - Real-time streaming models
+### Business Integration
+- **Risk-based Authentication:** Dynamic security based on fraud scores
+- **Merchant Risk Scoring:** Real-time merchant reputation system
+- **Customer Communication:** Intelligent fraud alerts and notifications
+- **Regulatory Compliance:** GDPR, PCI-DSS compliance features
 
-2. **Feature Enhancement:**
-   - Time series features (spending patterns)
-   - Network analysis (merchant connections)
-   - Anomaly detection features
 
-3. **Production Deployment:**
-   - Real-time scoring API
-   - Model monitoring and drift detection
-   - Automated retraining pipeline
 
-4. **Business Integration:**
-   - Risk-based authentication
-   - Dynamic transaction limits
-   - Fraud analyst dashboard
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/new-feature`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature/new-feature`)
-5. Create a Pull Request
+### Development Guidelines
+- Follow PEP 8 Python style guidelines
+- Add unit tests for new features
+- Update documentation for any changes
+- Ensure model performance is not degraded
 
 ## 📜 License
 
@@ -246,12 +317,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Dataset providers for the synthetic credit card data
-- Scikit-learn community for machine learning tools
-- Open source contributors to the fraud detection community
-
-
+- **Dataset Provider:** Synthetic credit card transaction dataset creators
+- **Open Source Community:** Scikit-learn, XGBoost, Streamlit contributors
+- **Academic Research:** Fraud detection literature and best practices
+- **Industry Experts:** Financial fraud prevention professionals
 
 ---
 
-**⚠️ Disclaimer:** This project uses synthetic data for educational purposes. In production fraud detection systems, additional privacy and security measures are required.
+**⚠️ Important Disclaimer:** This project uses synthetic data for educational and demonstration purposes. In production fraud detection systems, additional security measures, privacy protections, and regulatory compliance requirements must be implemented. The models and results shown here are for academic and portfolio demonstration only.

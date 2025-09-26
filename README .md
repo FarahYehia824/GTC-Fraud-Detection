@@ -11,7 +11,7 @@
 
 ---
 ## 🎥 Project Demo
-**Demo Video:** [Watch the complete project demonstration](YOUR_DRIVE_LINK_HERE) (5 minutes)
+**Demo Video:** [Watch the complete project demonstration](https://drive.google.com/drive/folders/1hZNRhd6ot-Iup7Jc4bT3euitkz3jpzR7) (4 minutes)
 
 ## 📋 Project Overview
 
@@ -219,8 +219,8 @@ GTC-Fraud-Detection/
 │   ├── requirements.txt                 # Python dependencies
 │   └── README.md                        # Project documentation
 │
-└── 📋 Documentation
-    └── REPORT_Data Analysis & Cleaning Report.pdf  # Detailed analysis report
+└── 📋 Documentation  
+    └── README.md                        # Project documentation
 ```
 
 ## 🚀 Getting Started
